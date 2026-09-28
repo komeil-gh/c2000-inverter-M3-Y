@@ -14,7 +14,7 @@ A simple adapter can be made with an [FTDI FT2232H-56Q MINI MODULE](https://ftdi
 
 ![Picture of a simple DIY JTAG adapter](DIY-Tesla-M3-inverter-JTAG-cable.jpg)
 
-![DIY JTAG Adapter Pinout]("JTAG Adapter Wiring.png")
+![DIY JTAG Adapter Pinout](<JTAG Adapter Wiring.png>)
 
 Also connect ACBUS5 (CN2-23) to GND (CN2-3) with a 1K resistor. Failure to do this will mean that Code Composer Studio will fail to connect to the target device.
 

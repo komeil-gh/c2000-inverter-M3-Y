@@ -21,7 +21,7 @@ c++ -std=c++98 -Wall -Wextra -Werror -Iinclude -Ilibopeninv/include test/testhvi
 /tmp/hvil-test
 ```
 
-Expected output: `HVIL interlock checks passed`. The check covers qualification at all three PWM frequencies, open/low/high/invalid samples, inclusive limits, malformed calibration, fault persistence, and reconfiguration. Assertions remain enabled in release builds.
+Expected output: `HVIL interlock checks passed`. The check covers qualification at all three PWM frequencies, open/low/high/invalid samples, inclusive limits, malformed calibration, fault persistence, and reconfiguration. Assertions remain enabled in release builds. The CI host test step uses CTest to include this check alongside the existing unit tests.
 
 With the normal CMake dependencies installed:
 

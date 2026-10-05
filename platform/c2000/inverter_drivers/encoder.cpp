@@ -58,7 +58,9 @@ static int      s_detectedDirection     = 0;
 static int32_t  s_startupDelay          = 0;
 static uint32_t s_fullTurns             = 0;
 static int      s_poleCounter           = 0;
-static uint32_t s_pwmFrq __attribute__((unused)) = 1;
+static uint32_t s_pwmFrq                = 0;
+static uint16_t s_frequencyUpdatePeriod = 0;
+static uint16_t s_frequencyUpdateCounter = 0;
 static int16_t  s_resolverPeakAmplitude = 0;
 static float    s_lastAbsTurns          = 0.0f;
 static float    s_maxSignedDiff         = 0.0f;
@@ -167,8 +169,15 @@ void Encoder::Reset()
     s_startupDelay          = 4000;
     s_fullTurns             = 0;
     s_poleCounter           = 0;
-    s_pwmFrq                = 1;
+    s_pwmFrq                = 0;
+    s_frequencyUpdatePeriod = 0;
+    s_frequencyUpdateCounter = 0;
     s_resolverPeakAmplitude = 0;
+    s_lastAbsTurns          = 0.0f;
+    s_maxSignedDiff         = 0.0f;
+    s_lastMaxSignedDiff     = 0.0f;
+    s_sampleCount           = 0;
+    s_lastSampleCount       = 0;
 }
 
 /** A resolver always knows its absolute position. */
@@ -207,11 +216,17 @@ void Encoder::UpdateRotorAngle(int /*dir*/)
 
 /**
  * Update the rotor frequency estimate.
- * Must be called at a known, regular rate (callingFrequency Hz).
- * Called at 10 Hz (every 100 ms) via scheduler task.
+ * Called once per PWM interrupt. Accumulate at least 100 ms of PWM cycles,
+ * then use their actual duration rather than assuming an exact 10 Hz rate.
  */
-void Encoder::UpdateRotorFrequency(int callingFrequency)
+bool Encoder::UpdateRotorFrequency()
 {
+    if (s_frequencyUpdatePeriod == 0 ||
+        ++s_frequencyUpdateCounter < s_frequencyUpdatePeriod)
+        return false;
+
+    const float callingFrequency = (float)s_pwmFrq / s_frequencyUpdateCounter;
+    s_frequencyUpdateCounter = 0;
     float absTurns = s_turnsSinceLastSample < 0.0f
                          ? -s_turnsSinceLastSample
                          : s_turnsSinceLastSample;
@@ -221,7 +236,7 @@ void Encoder::UpdateRotorFrequency(int callingFrequency)
     s_maxSignedDiff = 0.0f;
     s_lastSampleCount = s_sampleCount;
     s_sampleCount = 0;
-    float candidate = ((float)callingFrequency * absTurns) / TWO_PI;
+    float candidate = (callingFrequency * absTurns) / TWO_PI;
     if (s_startupDelay == 0 && absTurns > STABLE_ANGLE)
     {
         if (candidate < 500.0f)
@@ -237,6 +252,7 @@ void Encoder::UpdateRotorFrequency(int callingFrequency)
         s_detectedDirection = 0;
     }
     s_turnsSinceLastSample = 0.0f;
+    return true;
 }
 
 /** Return the number of UpdateTurns() calls in the last UpdateRotorFrequency interval. */
@@ -260,7 +276,21 @@ float Encoder::GetLastAbsTurns()
 /** Inform the encoder of the PWM carrier frequency (Hz). */
 void Encoder::SetPwmFrequency(uint32_t frq)
 {
-    s_pwmFrq = frq;
+    // Main-loop reconfiguration must not interrupt an in-progress ISR window.
+    const bool interruptsDisabled = Interrupt_disableMaster();
+    s_pwmFrq = frq <= 65535UL ? frq : 0;
+    s_frequencyUpdatePeriod = (s_pwmFrq + 9UL) / 10UL;
+    s_frequencyUpdateCounter = 0;
+    s_turnsSinceLastSample = 0.0f;
+    s_lastFrequency = 0.0f;
+    s_detectedDirection = 0;
+    s_sampleCount = 0;
+    s_lastSampleCount = 0;
+    s_maxSignedDiff = 0.0f;
+    s_lastMaxSignedDiff = 0.0f;
+    s_lastAbsTurns = 0.0f;
+    if (!interruptsDisabled)
+        Interrupt_enableMaster();
 }
 
 /**

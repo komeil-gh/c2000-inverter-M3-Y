@@ -291,7 +291,7 @@ void main(void)
         PowerWatchdog::Init() == PowerWatchdog::OK ? "OK" : "Fail");
 
     // Add periodic tasks: watchdog strobe (100ms)
-    // Note: taskUpdateRotorFrequency is called from the PWM ISR every 1220 cycles
+    // Resolver frequency windows are maintained by the PWM ISR at every rate.
     Scheduler::AddTask(taskStrobePowerWatchdog, 100);
 
     // Set up gate drivers — must be after PMIC init since gate PSU depends on

@@ -15,6 +15,13 @@ add_executable(HvilInterlockTest testhvil.cpp)
 target_link_libraries(HvilInterlockTest PRIVATE global_options libopeninv link_last)
 add_test(NAME HvilInterlockTest COMMAND HvilInterlockTest)
 
+add_executable(C2000ResolverTest testc2000resolver.cpp
+  ../platform/c2000/inverter_drivers/encoder.cpp)
+target_include_directories(C2000ResolverTest PRIVATE c2000
+  ../platform/c2000/inverter_drivers)
+target_link_libraries(C2000ResolverTest PRIVATE global_options libopeninv link_last)
+add_test(NAME C2000ResolverTest COMMAND C2000ResolverTest)
+
 # Unit test the library
 file(
   GLOB

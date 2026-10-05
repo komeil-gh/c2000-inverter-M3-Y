@@ -27,8 +27,7 @@ namespace c2000 {
 
 /**
  * Resolver-based encoder for the Tesla M3 inverter C2000 platform.
- * Wraps encoder::ResolverEncoder templated on MotorAnalogCapture with
- * sincosofs offset correction.
+ * Decodes MotorAnalogCapture samples with sincosofs offset correction.
  */
 class Encoder
 {
@@ -36,7 +35,8 @@ public:
     static void     Reset();
     static bool     SeenNorthSignal();
     static void     UpdateRotorAngle(int dir);
-    static void     UpdateRotorFrequency(int callingFrequency);
+    // Call once per PWM interrupt; returns true when a new window is available.
+    static bool     UpdateRotorFrequency();
     static void     SetPwmFrequency(uint32_t frq);
 
     static uint16_t GetRotorAngle();

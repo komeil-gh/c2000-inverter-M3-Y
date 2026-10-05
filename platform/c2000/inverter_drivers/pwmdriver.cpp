@@ -182,11 +182,8 @@ __interrupt void motor_control_adc_isr(void)
 
     PwmGeneration::Run();
 
-    static uint16_t s_freqUpdateCounter = 0;
-    if (++s_freqUpdateCounter >= 1220)
+    if (Encoder::UpdateRotorFrequency())
     {
-        s_freqUpdateCounter = 0;
-        Encoder::UpdateRotorFrequency(10);
         Param::SetInt(Param::speed, Encoder::GetSpeed());
     }
 
